@@ -57,6 +57,10 @@ done
 pb_require_linux
 pb_check_workspace_location
 
+if [[ "${EUID}" -eq 0 ]]; then
+    pb_die "Do not run the bootstrap as root or with sudo. Run it as your normal user; it invokes sudo only for apt packages."
+fi
+
 mkdir -p "${PB_TOOLS_BIN}" "${PB_DOWNLOAD_ROOT}" "${PB_STATE_ROOT}" "$(dirname "${PB_SDK_ROOT}")"
 
 HOST_PACKAGES=(
@@ -96,24 +100,18 @@ HOST_PACKAGES=(
 
 if [[ "${SKIP_PACKAGES}" -eq 0 ]]; then
     command -v apt-get >/dev/null 2>&1 || pb_die "apt-get was not found. Use --skip-packages only after installing equivalent dependencies yourself."
-
-    if [[ "${EUID}" -eq 0 ]]; then
-        SUDO=()
-    elif command -v sudo >/dev/null 2>&1; then
-        SUDO=(sudo)
-    else
-        pb_die "sudo is required to install host packages. Install dependencies manually and rerun with --skip-packages."
-    fi
+    command -v sudo >/dev/null 2>&1 || pb_die "sudo is required to install host packages. Install dependencies manually and rerun with --skip-packages."
 
     pb_info "Install PowerFin host dependencies"
-    "${SUDO[@]}" apt-get update
-    "${SUDO[@]}" apt-get install --yes --no-install-recommends "${HOST_PACKAGES[@]}"
+    sudo apt-get update
+    sudo apt-get install --yes --no-install-recommends "${HOST_PACKAGES[@]}"
 else
     pb_info "Skip host package installation"
 fi
 
 command -v git >/dev/null 2>&1 || pb_die "git is required"
 command -v curl >/dev/null 2>&1 || pb_die "curl is required"
+command -v sha256sum >/dev/null 2>&1 || pb_die "sha256sum is required"
 
 pb_info "Initialize Git LFS"
 git lfs install >/dev/null
@@ -138,6 +136,12 @@ if [[ ! -x "${PYTHON2_BIN}" ]]; then
         curl --fail --location "${PYTHON2_URL}" --output "${PYTHON2_ARCHIVE}"
     else
         printf 'Using cached download: %s\n' "${PYTHON2_ARCHIVE}"
+    fi
+
+    actual_sha256="$(sha256sum "${PYTHON2_ARCHIVE}" | awk '{print $1}')"
+    if [[ "${actual_sha256}" != "${PYTHON2_SHA256}" ]]; then
+        rm -f "${PYTHON2_ARCHIVE}"
+        pb_die "Python ${PYTHON2_VERSION} archive SHA-256 mismatch. Expected ${PYTHON2_SHA256}, got ${actual_sha256}."
     fi
 
     rm -rf "${PYTHON2_SOURCE}"
