@@ -11,7 +11,7 @@ The initial environment follows two upstream sources:
 1. `HumpbackLab/powerfin_sdk` bootstrap documentation for the SDK clone and `repo init/sync` flow.
 2. The upstream `powerfin-build.yml` workflow for the current Ubuntu host package set and its Python 2.7.18 compatibility step.
 
-The upstream CI currently runs on Ubuntu 24.04. WSL Linux is supported by these scripts as a host mode, but the setup warns when PropBean lives under `/mnt/*` because large Buildroot workspaces are better kept on the Linux filesystem.
+The upstream CI currently runs on Ubuntu 24.04. The scripts are also designed for WSL Linux hosts and warn when PropBean lives under `/mnt/*`, because the large Buildroot workspace is better kept on the Linux filesystem.
 
 ## Layout
 
@@ -38,18 +38,20 @@ propbean/
 
 ## Bootstrap
 
-From the PropBean repository root:
+Run as the normal development user, not through `sudo`:
 
 ```bash
 ./tools/setup/powerfin/bootstrap.sh
 ```
+
+The bootstrap invokes `sudo` only for Debian/Ubuntu package installation. It otherwise keeps generated files owned by the normal user.
 
 The bootstrap:
 
 1. installs the host packages used by the upstream PowerFin build workflow;
 2. runs `git lfs install`;
 3. installs the Android-style `repo` launcher under PropBean's local `.tools/` area;
-4. builds Python 2.7.18 locally under `.tools/`, matching the current upstream U-Boot CI compatibility path;
+4. downloads and SHA-256 verifies the Python 2.7.18 source archive, then builds it locally under `.tools/` to match the current upstream U-Boot CI compatibility path;
 5. clones `HumpbackLab/powerfin_sdk` under `third_party/`;
 6. initializes the official `HumpbackLab/manifest` `powerfin.xml`;
 7. syncs the SDK component repositories;
@@ -104,10 +106,12 @@ Missing required dependencies return a non-zero exit code. Workspace placement a
 
 PropBean does not pin or fork the SDK before the first hardware-validated baseline.
 
-During bring-up, the exact multi-repository state is captured using:
+During bring-up, `bootstrap.sh` records the exact multi-repository state at:
 
-```bash
-repo manifest -r -o .state/powerfin/powerfin-resolved.xml
+```text
+.state/powerfin/powerfin-resolved.xml
 ```
+
+The equivalent manual operation is to run `repo manifest -r` inside `$POWERFIN_SDK_ROOT` and write the output outside the upstream SDK workspace.
 
 After a clean official build and hardware smoke test pass, a validated manifest revision can become an explicit PropBean baseline. Any later upstream advance should then be treated as a deliberate dependency upgrade rather than an incidental `repo sync`.
