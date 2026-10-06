@@ -1,0 +1,23 @@
+# PropBean-managed local tools and state
+.tools/
+.state/
+
+# External SDK/source workspaces are provisioned by setup scripts
+third_party/*
+!third_party/README.md
+
+# Local build outputs and captures
+build/
+out/
+artifacts/
+*.log
+
+# Python/editor/OS noise
+.venv/
+venv/
+__pycache__/
+*.pyc
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db

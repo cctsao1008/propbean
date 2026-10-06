@@ -1,0 +1,113 @@
+# PowerFin development environment
+
+This directory owns PropBean's reproducible host-side setup for the upstream PowerFin RK3506 SDK.
+
+The implementation takes `cctsao1008/pibbi` as a structural reference only. PowerFin is a Linux/Buildroot multi-repository SDK, so this setup is intentionally Linux-first and follows the PowerFin project's own `repo` manifest rather than reproducing pibbi's Windows/HX6538 toolchain model.
+
+## Baseline sources
+
+The initial environment follows two upstream sources:
+
+1. `HumpbackLab/powerfin_sdk` bootstrap documentation for the SDK clone and `repo init/sync` flow.
+2. The upstream `powerfin-build.yml` workflow for the current Ubuntu host package set and its Python 2.7.18 compatibility step.
+
+The upstream CI currently runs on Ubuntu 24.04. WSL Linux is supported by these scripts as a host mode, but the setup warns when PropBean lives under `/mnt/*` because large Buildroot workspaces are better kept on the Linux filesystem.
+
+## Layout
+
+```text
+propbean/
+├─ .tools/
+│  └─ powerfin/
+│     ├─ bin/repo
+│     └─ python-2.7.18/
+├─ .state/
+│  └─ powerfin/
+│     └─ powerfin-resolved.xml
+├─ third_party/
+│  └─ powerfin-sdk/
+└─ tools/setup/powerfin/
+   ├─ activate.sh
+   ├─ bootstrap.sh
+   ├─ check-env.sh
+   ├─ common.sh
+   └─ env.conf
+```
+
+`.tools/`, `.state/`, and the SDK checkout are local state and are ignored by PropBean Git.
+
+## Bootstrap
+
+From the PropBean repository root:
+
+```bash
+./tools/setup/powerfin/bootstrap.sh
+```
+
+The bootstrap:
+
+1. installs the host packages used by the upstream PowerFin build workflow;
+2. runs `git lfs install`;
+3. installs the Android-style `repo` launcher under PropBean's local `.tools/` area;
+4. builds Python 2.7.18 locally under `.tools/`, matching the current upstream U-Boot CI compatibility path;
+5. clones `HumpbackLab/powerfin_sdk` under `third_party/`;
+6. initializes the official `HumpbackLab/manifest` `powerfin.xml`;
+7. syncs the SDK component repositories;
+8. writes an exact resolved manifest under `.state/`;
+9. runs the non-destructive environment checker.
+
+The script does not modify `~/.bashrc` or permanently alter `PATH`.
+
+### Intentional SDK update
+
+An existing workspace is left at its current revision by default. To intentionally fast-forward and re-sync it:
+
+```bash
+./tools/setup/powerfin/bootstrap.sh --update
+```
+
+The update is refused when the SDK root or any manifest-managed repository has local modifications.
+
+Other options:
+
+```text
+--skip-packages   use already-installed equivalent host dependencies
+--skip-sync       initialize the workspace without downloading all manifest projects
+--jobs N          override repo sync parallelism
+```
+
+## Activate the current shell
+
+```bash
+source ./tools/setup/powerfin/activate.sh
+```
+
+This adds only PropBean's local `repo` and Python 2 compatibility runtime to the current shell and defines:
+
+```text
+POWERFIN_SDK_ROOT=<propbean>/third_party/powerfin-sdk
+```
+
+Opening a new shell restores the normal environment.
+
+## Validate
+
+```bash
+./tools/setup/powerfin/check-env.sh
+```
+
+The checker validates the Linux host, architecture, upstream Debian/Ubuntu package set, core tools, local `repo`, Python 2 compatibility runtime, SDK checkout, manifest workspace, expected kernel/Buildroot/U-Boot trees, working-tree cleanliness, and the locally recorded resolved manifest.
+
+Missing required dependencies return a non-zero exit code. Workspace placement and local source changes are warnings rather than destructive actions.
+
+## Dependency policy
+
+PropBean does not pin or fork the SDK before the first hardware-validated baseline.
+
+During bring-up, the exact multi-repository state is captured using:
+
+```bash
+repo manifest -r -o .state/powerfin/powerfin-resolved.xml
+```
+
+After a clean official build and hardware smoke test pass, a validated manifest revision can become an explicit PropBean baseline. Any later upstream advance should then be treated as a deliberate dependency upgrade rather than an incidental `repo sync`.
