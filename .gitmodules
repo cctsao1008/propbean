@@ -1,0 +1,4 @@
+[submodule "external/ardupilot"]
+	path = external/ardupilot
+	url = https://github.com/cctsao1008/ardupilot.git
+	branch = propbean
