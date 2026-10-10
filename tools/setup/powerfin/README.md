@@ -76,6 +76,10 @@ The script does not modify `~/.bashrc` or permanently alter `PATH`.
 
 The manifest's Buildroot project generates the top-level `envsetup.sh` linkfile. PropBean recognizes that exact link as normal workspace state, while still checking tracked source changes and other unexpected untracked files. A clean `repo status` message is not considered a modification.
 
+### Known upstream Buildroot linkfile mismatch
+
+At the inspected upstream revisions, `HumpbackLab/manifest:powerfin.xml` links `build/envsetup.sh` from the Buildroot project to the SDK root `envsetup.sh`, while `HumpbackLab/buildroot` stores `envsetup.sh` in its repository root. Android `repo` therefore creates a dangling symlink (`envsetup.sh -> buildroot/build/envsetup.sh`). PropBean treats that generated symlink as non-dirty SDK state **but warns separately that the link is broken**. Do not modify the SDK checkout just to hide the warning; track the upstream correction in [issue #2](https://github.com/cctsao1008/propbean/issues/2).
+
 ### Intentional SDK update
 
 An existing workspace is left at its current revision by default. To intentionally fast-forward and re-sync it:
