@@ -64,11 +64,13 @@ The bootstrap:
 2. runs `git lfs install`;
 3. installs the Android-style `repo` launcher under PropBean's local `.tools/` area;
 4. downloads and SHA-256 verifies the Python 2.7.18 source archive, then builds it locally under `.tools/` to match the current upstream U-Boot CI compatibility path;
-5. clones `HumpbackLab/powerfin_sdk` under `third_party/`;
+5. clones `HumpbackLab/powerfin_sdk` under `third_party/` with Git LFS smudging disabled;
 6. initializes the official `HumpbackLab/manifest` `powerfin.xml`;
 7. syncs the SDK component repositories;
 8. writes an exact resolved manifest under `.state/`;
 9. runs the non-destructive environment checker.
+
+The SDK root tracks thousands of Git LFS objects. The bootstrap therefore does **not** download the full root LFS payload by default. This keeps environment bring-up separate from full image-build preparation.
 
 The script does not modify `~/.bashrc` or permanently alter `PATH`.
 
@@ -80,15 +82,18 @@ An existing workspace is left at its current revision by default. To intentional
 ./tools/setup/powerfin/bootstrap.sh --update
 ```
 
-The update is refused when the SDK root or any manifest-managed repository has local modifications.
+The update is refused when the SDK root or any manifest-managed repository has local modifications. Bootstrap also refuses to continue if the SDK root looks dirty or incompletely checked out; for a disposable fresh workspace, remove `third_party/powerfin-sdk` and rerun the bootstrap rather than trying to repair thousands of missing files manually.
 
 Other options:
 
 ```text
 --skip-packages   use already-installed equivalent host dependencies
 --skip-sync       initialize the workspace without downloading all manifest projects
+--with-lfs        download the complete PowerFin SDK root Git LFS payload
 --jobs N          override repo sync parallelism
 ```
+
+Use `--with-lfs` only when preparing a complete official image build that needs the SDK root binary payload. The normal bootstrap path keeps LFS pointer files in place.
 
 ## Activate the current shell
 
