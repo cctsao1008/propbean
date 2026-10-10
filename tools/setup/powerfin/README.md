@@ -127,6 +127,18 @@ The checker validates the Linux host, architecture, upstream Debian/Ubuntu packa
 
 Missing required dependencies return a non-zero exit code. Workspace placement and local source changes are warnings rather than destructive actions.
 
+## Read-only Git LFS build-input audit
+
+Before downloading the full SDK root LFS payload or attempting an image build, run:
+
+```bash
+python3 tools/setup/powerfin/audit-lfs.py
+```
+
+This inspects the local SDK root without downloading anything or changing files. It groups tracked LFS payloads into boot assets (`rkbin`), cross-toolchain binaries, image packers, signing tools, and other assets. It also prints the present/pointer state of known RK3506 and image-packaging inputs. A `POINTER` means the working tree has only Git LFS metadata, not the required binary; `PRESENT` does not by itself prove that the binary is executable or the complete build prerequisites are satisfied.
+
+Avoid `bootstrap.sh --with-lfs` until the smallest complete set of required payloads has been identified.
+
 ## Dependency policy
 
 PropBean does not pin or fork the SDK before the first hardware-validated baseline.
