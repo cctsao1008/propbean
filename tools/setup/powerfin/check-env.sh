@@ -124,7 +124,10 @@ do
 done
 
 if [[ -x "${PB_TOOLS_BIN}/repo" ]]; then
-    repo_first_line="$("${PB_TOOLS_BIN}/repo" version 2>/dev/null | head -n 1)"
+    repo_first_line=""
+    if [[ -d "${PB_SDK_ROOT}/.repo" ]]; then
+        repo_first_line="$(cd "${PB_SDK_ROOT}" && "${PB_TOOLS_BIN}/repo" version 2>/dev/null | head -n 1)"
+    fi
     result PASS "repo" "${repo_first_line:-${PB_TOOLS_BIN}/repo} [project-local]"
 elif command -v repo >/dev/null 2>&1; then
     result WARN "repo" "$(command -v repo) [PATH fallback; bootstrap normally provisions a project-local copy]"
@@ -153,24 +156,23 @@ else
     sdk_head="$(git -C "${PB_SDK_ROOT}" rev-parse HEAD 2>/dev/null || true)"
     result PASS "PowerFin SDK" "${PB_SDK_ROOT}, HEAD ${sdk_head}"
 
-    root_dirty="$(git -C "${PB_SDK_ROOT}" status --porcelain 2>/dev/null || true)"
-    if [[ -n "${root_dirty}" ]]; then
-        result WARN "SDK root working tree" "local modifications detected"
+    if ! root_dirty="$(pb_sdk_root_changes)"; then
+        result WARN "SDK root working tree" "unable to verify working tree status"
+    elif [[ -n "${root_dirty}" ]]; then
+        result WARN "SDK root working tree" "local changes: $(printf '%s\n' "${root_dirty}" | head -n 3 | tr '\n' ' ')"
     else
-        result PASS "SDK root working tree" "clean"
+        result PASS "SDK root working tree" "clean (generated repo linkfiles excluded)"
     fi
 
     if [[ -d "${PB_SDK_ROOT}/.repo" ]]; then
         result PASS "repo manifest workspace" "initialized"
 
-        repo_cmd="$(pb_repo_cmd 2>/dev/null || true)"
-        if [[ -n "${repo_cmd}" ]]; then
-            repo_status="$(cd "${PB_SDK_ROOT}" && "${repo_cmd}" status 2>/dev/null || true)"
-            if [[ -n "${repo_status}" ]]; then
-                result WARN "Manifest project working trees" "local changes detected; run repo status in the SDK for details"
-            else
-                result PASS "Manifest project working trees" "clean"
-            fi
+        if ! repo_changes="$(pb_repo_project_changes)"; then
+            result WARN "Manifest project working trees" "unable to verify repo-managed Git workspaces"
+        elif [[ -n "${repo_changes}" ]]; then
+            result WARN "Manifest project working trees" "modified projects: $(printf '%s\n' "${repo_changes}" | head -n 3 | tr '\n' ' ')"
+        else
+            result PASS "Manifest project working trees" "clean"
         fi
     else
         result FAIL "repo manifest workspace" ".repo is missing; run bootstrap.sh"
