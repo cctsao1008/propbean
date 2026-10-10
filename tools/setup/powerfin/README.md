@@ -4,6 +4,18 @@ This directory owns PropBean's reproducible host-side setup for the upstream Pow
 
 The implementation takes `cctsao1008/pibbi` as a structural reference only. PowerFin is a Linux/Buildroot multi-repository SDK, so this setup is intentionally Linux-first and follows the PowerFin project's own `repo` manifest rather than reproducing pibbi's Windows/HX6538 toolchain model.
 
+## Host requirement
+
+These scripts require a Linux shell. On a Windows development machine, use WSL bash; do not invoke `bootstrap.sh`, `activate.sh`, or `check-env.sh` directly from PowerShell.
+
+From PowerShell:
+
+```powershell
+wsl
+```
+
+Then work from the WSL shell. A checkout under the Linux filesystem, such as `~/src/propbean`, is preferred over `/mnt/c/*` or `/mnt/d/*` because Buildroot performs many filesystem operations.
+
 ## Baseline sources
 
 The initial environment follows two upstream sources:
@@ -11,7 +23,7 @@ The initial environment follows two upstream sources:
 1. `HumpbackLab/powerfin_sdk` bootstrap documentation for the SDK clone and `repo init/sync` flow.
 2. The upstream `powerfin-build.yml` workflow for the current Ubuntu host package set and its Python 2.7.18 compatibility step.
 
-The upstream CI currently runs on Ubuntu 24.04. The scripts are also designed for WSL Linux hosts and warn when PropBean lives under `/mnt/*`, because the large Buildroot workspace is better kept on the Linux filesystem.
+The upstream CI currently runs on Ubuntu 24.04. The scripts are also designed for WSL Linux hosts and warn when PropBean lives under `/mnt/*`.
 
 ## Layout
 
@@ -83,6 +95,8 @@ Other options:
 ```bash
 source ./tools/setup/powerfin/activate.sh
 ```
+
+`source` is a bash builtin. It will not work in PowerShell.
 
 This adds only PropBean's local `repo` and Python 2 compatibility runtime to the current shell and defines:
 
