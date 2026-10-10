@@ -186,10 +186,6 @@ if pb_sdk_is_dirty; then
 fi
 
 if [[ "${UPDATE_SDK}" -eq 1 ]]; then
-    if pb_sdk_is_dirty; then
-        pb_die "PowerFin SDK workspace has local changes. Refusing to update or re-sync it."
-    fi
-
     pb_info "Fast-forward PowerFin SDK root"
     git -C "${PB_SDK_ROOT}" pull --ff-only
 fi
