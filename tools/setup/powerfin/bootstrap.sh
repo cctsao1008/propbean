@@ -9,6 +9,7 @@ source "${SCRIPT_DIR}/common.sh"
 UPDATE_SDK=0
 SKIP_PACKAGES=0
 SKIP_SYNC=0
+WITH_LFS=0
 SYNC_JOBS="${POWERFIN_SYNC_JOBS}"
 
 usage() {
@@ -19,6 +20,7 @@ Options:
   --update          Fast-forward the SDK root and re-sync manifest projects.
   --skip-packages   Do not install Debian/Ubuntu host packages.
   --skip-sync       Clone/init as needed but do not run repo sync.
+  --with-lfs        Download the full PowerFin SDK root Git LFS payload.
   --jobs N          Override repo sync job count.
   -h, --help        Show this help.
 EOF
@@ -36,6 +38,10 @@ while [[ $# -gt 0 ]]; do
             ;;
         --skip-sync)
             SKIP_SYNC=1
+            shift
+            ;;
+        --with-lfs)
+            WITH_LFS=1
             shift
             ;;
         --jobs)
@@ -167,12 +173,16 @@ export PATH="${PB_TOOLS_BIN}:${PB_PYTHON2_PREFIX}/bin:${PATH}"
 pb_info "Provision official PowerFin SDK workspace"
 NEW_SDK=0
 if [[ ! -d "${PB_SDK_ROOT}" ]]; then
-    git clone "${POWERFIN_SDK_URL}" "${PB_SDK_ROOT}"
+    GIT_LFS_SKIP_SMUDGE=1 git clone "${POWERFIN_SDK_URL}" "${PB_SDK_ROOT}"
     NEW_SDK=1
 elif [[ ! -d "${PB_SDK_ROOT}/.git" ]]; then
     pb_die "SDK path exists but is not a Git checkout: ${PB_SDK_ROOT}"
 else
     printf 'Already present: %s\n' "${PB_SDK_ROOT}"
+fi
+
+if pb_sdk_is_dirty; then
+    pb_die "PowerFin SDK workspace has local changes or an incomplete checkout. Repair or remove ${PB_SDK_ROOT} before continuing."
 fi
 
 if [[ "${UPDATE_SDK}" -eq 1 ]]; then
@@ -184,7 +194,12 @@ if [[ "${UPDATE_SDK}" -eq 1 ]]; then
     git -C "${PB_SDK_ROOT}" pull --ff-only
 fi
 
-git -C "${PB_SDK_ROOT}" lfs pull
+if [[ "${WITH_LFS}" -eq 1 ]]; then
+    pb_info "Download full PowerFin SDK root Git LFS payload"
+    git -C "${PB_SDK_ROOT}" lfs pull
+else
+    pb_info "Skip full PowerFin SDK root Git LFS payload; use --with-lfs when preparing a complete image build"
+fi
 
 if [[ ! -d "${PB_SDK_ROOT}/.repo" ]]; then
     pb_info "Initialize upstream PowerFin repo manifest"
