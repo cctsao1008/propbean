@@ -25,17 +25,21 @@ propbean/
 
 ## ArduPilot
 
-Clone with the pinned ArduPilot revision:
+Clone PropBean first, then initialize only the top-level ArduPilot submodule:
 
 ```bash
-git clone --recurse-submodules https://github.com/cctsao1008/propbean.git
+git clone https://github.com/cctsao1008/propbean.git
+cd propbean
+git submodule update --init external/ardupilot
 ```
 
-For an existing clone:
+ArduPilot itself has nested submodules. Initialize those separately when preparing the ArduPilot build environment:
 
 ```bash
-git submodule update --init --recursive
+git -C external/ardupilot submodule update --init --recursive
 ```
+
+Keeping these two steps separate makes failures in ArduPilot's own dependency tree easier to diagnose.
 
 The ArduPilot fork uses:
 
@@ -48,13 +52,24 @@ PropBean always records an exact submodule commit SHA for reproducibility. The b
 
 ## PowerFin development environment
 
-The supported bring-up path is Linux or WSL Linux:
+The PowerFin setup scripts are **Linux shell scripts**. On Windows, run them from WSL bash, not from PowerShell.
+
+From PowerShell:
+
+```powershell
+wsl
+```
+
+Then, inside WSL:
 
 ```bash
+cd ~/src/propbean
 ./tools/setup/powerfin/bootstrap.sh
 source ./tools/setup/powerfin/activate.sh
 ./tools/setup/powerfin/check-env.sh
 ```
+
+A clone under the WSL Linux filesystem (for example `~/src/propbean`) is preferred over `/mnt/c` or `/mnt/d` for the large Buildroot workspace.
 
 The bootstrap flow keeps the upstream PowerFin SDK under `third_party/`, installs project-local compatibility tools under `.tools/`, and records the resolved multi-repository manifest under `.state/`.
 
