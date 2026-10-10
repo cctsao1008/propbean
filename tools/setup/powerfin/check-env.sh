@@ -167,6 +167,22 @@ else
     if [[ -d "${PB_SDK_ROOT}/.repo" ]]; then
         result PASS "repo manifest workspace" "initialized"
 
+        # A generated repo linkfile is not a Git modification. Validate that
+        # its target actually exists as a separate integrity check.
+        envsetup_link="${PB_SDK_ROOT}/envsetup.sh"
+        if [[ -L "${envsetup_link}" ]]; then
+            envsetup_target="$(readlink -- "${envsetup_link}")"
+            if [[ -e "${envsetup_link}" ]]; then
+                result PASS "Buildroot envsetup linkfile" "${envsetup_target}"
+            else
+                result WARN "Buildroot envsetup linkfile" "dangling: envsetup.sh -> ${envsetup_target}; upstream manifest points to build/envsetup.sh, but Buildroot has envsetup.sh at its repository root"
+            fi
+        elif [[ -e "${envsetup_link}" ]]; then
+            result WARN "Buildroot envsetup linkfile" "not a symbolic link"
+        else
+            result WARN "Buildroot envsetup linkfile" "missing"
+        fi
+
         if ! repo_changes="$(pb_repo_project_changes)"; then
             result WARN "Manifest project working trees" "unable to verify repo-managed Git workspaces"
         elif [[ -n "${repo_changes}" ]]; then
