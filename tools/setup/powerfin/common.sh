@@ -75,8 +75,11 @@ pb_sdk_root_changes() {
         [[ -n "${line}" ]] || continue
 
         if [[ "${line}" == '?? envsetup.sh' && -L "${PB_SDK_ROOT}/envsetup.sh" ]]; then
-            target="$(readlink -f -- "${PB_SDK_ROOT}/envsetup.sh")" || return 1
-            if [[ "${target}" == "${PB_SDK_ROOT}/buildroot/build/envsetup.sh" ]]; then
+            # Compare the literal link emitted by repo. The manifest currently
+            # targets buildroot/build/envsetup.sh, which is absent upstream;
+            # readlink -f would fail and misclassify the whole checkout.
+            target="$(readlink -- "${PB_SDK_ROOT}/envsetup.sh")" || return 1
+            if [[ "${target}" == 'buildroot/build/envsetup.sh' ]]; then
                 continue
             fi
         fi
