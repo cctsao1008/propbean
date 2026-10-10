@@ -39,7 +39,7 @@ def inspect_file(path: pathlib.Path) -> tuple[str, int | None]:
         return ("NOT_FILE", None)
     try:
         with path.open("rb") as stream:
-            if stream.readline() != LFS_HEADER:
+            if stream.read(len(LFS_HEADER)) != LFS_HEADER:
                 return ("PRESENT", None)
             oid_line = stream.readline()
             size_line = stream.readline()
@@ -122,7 +122,7 @@ def main() -> int:
         size_label = human_bytes(size) if size is not None else "-"
         print(f"  {state:<9} {size_label:>11} {n}")
 
-    print("\\nNOTE: POINTER means the working tree contains a Git LFS pointer, not the binary.")
+    print("\nNOTE: POINTER means the working tree contains a Git LFS pointer, not the binary.")
     print("Pointer bytes are declared uncompressed logical payload sizes, not network transfer estimates.")
     print("No files were downloaded or changed. A complete image build needs additional validation.")
     return 0
