@@ -74,6 +74,8 @@ The SDK root tracks thousands of Git LFS objects. The bootstrap therefore does *
 
 The script does not modify `~/.bashrc` or permanently alter `PATH`.
 
+The manifest's Buildroot project generates the top-level `envsetup.sh` linkfile. PropBean recognizes that exact link as normal workspace state, while still checking tracked source changes and other unexpected untracked files. A clean `repo status` message is not considered a modification.
+
 ### Intentional SDK update
 
 An existing workspace is left at its current revision by default. To intentionally fast-forward and re-sync it:
